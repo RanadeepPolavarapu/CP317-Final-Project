@@ -40,6 +40,7 @@
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/login-or-register.html \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/plugins \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/search-results.html \
+/Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/sort-by.html \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/css/animate.css \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/css/index.css \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/css/main.css \
@@ -207,7 +208,6 @@
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/js/vendor/jquery-2.1.1 \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/js/vendor/jquery.mobile-1.4.4 \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/js/vendor/noty \
-/Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/js/vendor/semantic-ui \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/js/vendor/jquery-2.1.1/jquery-2.1.1.js \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/js/vendor/jquery-2.1.1/jquery-2.1.1.min.js \
 /Users/RanadeepPolavarapu/GitHub/CP317-Final-Project/src/frontend/g4p5/platforms/android/assets/www/js/vendor/jquery-2.1.1/jquery-2.1.1.min.map \

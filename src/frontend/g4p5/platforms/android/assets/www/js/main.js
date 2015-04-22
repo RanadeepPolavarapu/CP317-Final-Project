@@ -1,10 +1,16 @@
-// Shorthand for $( document ).ready() (On DOM Ready)
+/*
+ *  Shorthand for $( document ).ready() (on DOM Ready).
+ */
 $(function() {
-    // Enable timeago plugin for abbr tag with class "timeago".
+    /*
+     * Enable timeago plugin for abbr tag with class "timeago".
+     */
     $("abbr.timeago").timeago();
 });
 
-// noty plugin default options.
+/*
+ * JQuery noty plugin default options being set.
+ */
 $.noty.defaults = {
     layout: 'top',
     theme: 'relax', // or 'relax'
@@ -38,7 +44,9 @@ $.noty.defaults = {
     buttons: false // an array of buttons
 };
 
-// JavaScript & HTML utilities. Ex: String escaping HTML for JS compatibility.
+/*
+ *  JavaScript & HTML utilities. Ex: String escaping HTML for JS compatibility.
+ */
 var Utilities = {
     entityMap: {
         "&": "&amp;",
@@ -48,7 +56,9 @@ var Utilities = {
         "'": '&#39;',
         "/": '&#x2F;',
     },
-
+    /*
+     * Escapes HTML characters to prvent any errors from HTML & JS string collissions.
+     */
     escapeHtml: function(string) {
         return String(string).replace(/[&<>"'\/]/g, function(s) {
             return Utilities.entityMap[s];
@@ -56,10 +66,14 @@ var Utilities = {
     },
 };
 
-// Cordova API specific for android devices to access camera and photo gallery.
+/*
+ *  Cordova API specific for android devices to access camera and photo gallery.
+ */
 var AndroidUtilities = {
     getPhotoWithSize: function(source) {
-        // Retrieve image file location from specified source
+        /*
+         *  Retrieve image file location from specified source. Specific source is hardware device specific.
+         */
         navigator.camera.getPicture(onPhotoURISuccess, onFail, {
             quality: 50,
             targetWidth: 960,
@@ -70,8 +84,13 @@ var AndroidUtilities = {
     },
 };
 
-// ChefsHub global namespace.
+/*
+ *  ChefsHub global namespace. This classes along with all core functions.
+ */
 var CHEFSHUB = {
+    /*
+     *  User map object to track user authentication status.
+     */
     User: {
         authentication: {
             loggedIn: false,
@@ -79,6 +98,10 @@ var CHEFSHUB = {
             authenticated: false,
         },
 
+        /*
+         *  Queries the user database given a username and password.
+         *  If a matching user is found, login is successful.
+         */
         userLogin: function(loginURLRoute, username, password) {
             var jsonLoginData = {
                 username: username,
@@ -98,6 +121,10 @@ var CHEFSHUB = {
             });
         },
 
+        /*
+         *  Logs the user out of the system, notifies them of the success
+         *  and redirects them to the main page
+         */
         userLogout: function() {
             var authLogoutURLRoute = "http://cp317.ff.gg/api/auth/user/logout.json";
 
@@ -125,6 +152,9 @@ var CHEFSHUB = {
             });
         },
 
+        /*
+         *  If login is successful, user is notified and redirected to the main page.
+         */
         userLoginSuccess: function() {
             if (!Modernizr.localstorage)
                 return;
@@ -144,6 +174,9 @@ var CHEFSHUB = {
             });
         },
 
+        /*
+         *  If login fails, error message is printed.
+         */
         userLoginFailure: function(errorMessage) {
             noty({
                 text: '<span style="color: #000;"> Login Failed! <br>Error Message: ' + errorMessage + '</span>',
@@ -158,6 +191,9 @@ var CHEFSHUB = {
             });
         },
 
+        /*
+         *  Notifies user of successful registration.
+         */
         userRegisterSuccess: function() {
             noty({
                 text: 'Successfully registered! You are now being logged in to our system.',
@@ -172,6 +208,10 @@ var CHEFSHUB = {
             });
         },
 
+        /*
+         *  Gets user info from database and displays it. Also, replaces sign in button with logout button.
+         *  If user is not signed in, displays sign in button.
+         */
         userAuthenticationCheck: function() {
             var isAuthenticatedURLRoute = 'http://cp317.ff.gg/api/auth/user/is_authenticated.json';
 
@@ -180,9 +220,9 @@ var CHEFSHUB = {
                 url: isAuthenticatedURLRoute,
                 success: function(response) {
                     if (response['success']) {
-                        $("#verified-user").append('<h4><u>User Verified</u></h4> <p>Logged in as: ' + response['data']['user_data']['username'] + '.');
+                        $("#verified-user").append('<h4><u>User Verified</u></h4> <p>Logged in as: ' + response['data']['user_data']['username'] + '. <br>Liked: ' + JSON.parse(response['data']['CH_user_data']['json_liked_recipes']).length + ' recipies.');
                         $("#sign-in-button").replaceWith('<button onclick="CHEFSHUB.User.userLogout();" data-theme="b" id="sign-in-button" class="ui-btn-right ui-btn ui-btn-b ui-shadow ui-corner-all"><i class="user icon"></i>Logout</button>');
-
+                        CHEFSHUB.checkLikedRecipes(response);
                     } else {
                         $("#verified-user").append('<h5>User not logged in. <br>Please sign in.</h5>');
                         $("#sign-in-button").replaceWith('<button onclick="window.location.replace(\'login-or-register.html\');" data-theme="b" id="sign-in-button" class="ui-btn-right ui-btn ui-btn-b ui-shadow ui-corner-all"><i class="signup icon"></i>Sign In</button>');
@@ -192,9 +232,122 @@ var CHEFSHUB = {
         }
     },
 
+    /*
+     *  Sorts and displays recipes from the database based on the criteria chosen
+     *  from the dropdown list on the sort page.
+     */
+    sortRecipes: function(option) {
+        switch (option) {
+            case "lowest-difficulty":
+                CHEFSHUB.sortByDifficulty();
+                break;
+            case "highest-serving":
+                CHEFSHUB.sortByHighestServingValue();
+                break;
+            case "most-recent-date-added":
+                CHEFSHUB.sortByDateAdded();
+                break;
+            case "highest-rating":
+                CHEFSHUB.sortByHighestRating();
+                break;
+            default:
+                // Null case. Case not found.
+                console.log("Error: null case. Ran out of options.");
+        }
+    },
+
+    /*
+     *  Gets recipes from database and adds them to recipe-list
+     *  in order of increasing difficulty.
+     */
+    sortByDifficulty: function() {
+        var leastDifficultRecipeURLRoute = 'http://cp317.ff.gg/api/recipe/get_least_difficult.json';
+
+        $.ajax({
+            type: "GET", // Make a GET request.
+            url: leastDifficultRecipeURLRoute,
+            success: function(response) {
+                if (response['success']) {
+                    $('#recipe-list').empty();
+                    $.each(response.data, function(i, row) {
+                        $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc">Rating: ' + row.rating + '/5</p><p class="ui-li-desc">Published: ' + jQuery.timeago(row.meta_date_created) + '</p><p><b>Difficulty: ' + row.difficulty + '</b></p><p class="ui-li-desc">Author: ' + row.owner + '</p></a></li>');
+                        $('#recipe-list').listview('refresh');
+                    });
+                }
+            },
+        });
+    },
+
+    /*
+     *  Gets recipes from database and adds them to recipe-list
+     *  in order of most recently uploaded recipes.
+     */
+    sortByDateAdded: function() {
+        var mostRecentUploadTimeURLRoute = 'http://cp317.ff.gg/api/recipe/get_recent.json';
+
+        $.ajax({
+            type: "GET", // Make a GET request.
+            url: mostRecentUploadTimeURLRoute,
+            success: function(response) {
+                if (response['success']) {
+                    $('#recipe-list').empty();
+                    $.each(response.data, function(i, row) {
+                        $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc">Rating: ' + row.rating + '/5</p><p class="ui-li-desc"><b>Published: ' + jQuery.timeago(row.meta_date_created) + '</b></p><p>Difficulty: ' + row.difficulty + '</p><p class="ui-li-desc">Author: ' + row.owner + '</p></a></li>');
+                        $('#recipe-list').listview('refresh');
+                    });
+                }
+            },
+        });
+    },
+
+    /*
+     *  Gets recipes from the database in order of highest to lowest rating value.
+     *  Then appends them to list-view so it is visible to the user.
+     */
+    sortByHighestRating: function() {
+        var topRatedRecipeURLRoute = 'http://cp317.ff.gg/api/recipe/get_top_rated.json';
+
+        $.ajax({
+            type: "GET", // Make a GET request.
+            url: topRatedRecipeURLRoute,
+            success: function(response) {
+                if (response['success']) {
+                    $('#recipe-list').empty();
+                    $.each(response.data, function(i, row) {
+                        $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc"><b>Rating: ' + row.rating + '/5</b></p><p class="ui-li-desc">Published: ' + jQuery.timeago(row.meta_date_created) + '</p><p>Difficulty: ' + row.difficulty + '</p><p class="ui-li-desc">Author: ' + row.owner + '</p></a></li>');
+                        $('#recipe-list').listview('refresh');
+                    });
+                }
+            },
+        });
+    },
+
+    /*
+     *  Gets recipes from the database in order of highest to lowest serving value.
+     *  Then appends them to list-view so it is visible to the user.
+     */
+    sortByHighestServingValue: function() {
+        var highestServingValueRecipesURLRoute = 'http://cp317.ff.gg/api/recipe/get_most_serving_value.json';
+
+        $.ajax({
+            type: "GET", // Make a GET request.
+            url: highestServingValueRecipesURLRoute,
+            success: function(response) {
+                if (response['success']) {
+                    $('#recipe-list').empty();
+                    $.each(response.data, function(i, row) {
+                        $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc">Rating: ' + row.rating + '/5</p><p class="ui-li-desc">Published: ' + jQuery.timeago(row.meta_date_created) + '</p><p>Difficulty: ' + row.difficulty + '</p><p class="ui-li-desc"><b>Serves: ' + row.serving_value + ' people</b></p><p class="ui-li-desc">Author: ' + row.owner + '</p></a></li>');
+                        $('#recipe-list').listview('refresh');
+                    });
+                }
+            },
+        });
+    },
+
+    /*
+     *  Use data from the search form to find matching recipes in the database
+     */
     searchRecipe: function() {
-        // Fill recipe-list with recipes matching search result
-        // Fill recipe-data with recipe selected
         $(function() {
             $('#recipe-search-form').submit(function(event) {
 
@@ -218,10 +371,14 @@ var CHEFSHUB = {
         });
     },
 
+    /*
+     *  Fill recipe-list with recipes matching search result and
+     *  recipe-data with the recipe selected by user.
+     */
     searchRecipeFillListview: function(recipeData) {
         $('#recipe-list').empty();
         $.each(recipeData.data, function(i, row) {
-            $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc">Rating: ' + row.rating + '/5</p><p class=""ui-li-desc">Published: ' + jQuery.timeago(row.meta_date_created) + '</p><p class="ui-li-desc">Author: ' + row.owner + '</p></a></li>');
+            $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc">Rating: ' + row.rating + '/5</p><p class="ui-li-desc">Published: ' + jQuery.timeago(row.meta_date_created) + '</p><p class="ui-li-desc">Author: ' + row.owner + '</p></a></li>');
             $('#recipe-list').listview('refresh');
         });
 
@@ -262,6 +419,10 @@ var CHEFSHUB = {
         };
     },
 
+    /*
+     *  Get and display app statistics from the database including
+     *  total users and recipes.
+     */
     getChefsHubStatistics: function() {
         var statisticsURLRoute = 'http://cp317.ff.gg/api/recipe/statistics.json';
 
@@ -278,6 +439,10 @@ var CHEFSHUB = {
         });
     },
 
+    /*
+     *  Take a photo URL and formats it so that it can be displayed as an image server side.
+     *  It handles TextField URL into Django's ImageField using an oldschool special conversion trick.
+     */
     recipeConvertPhotoURLToImageField: function() {
         var ajaxConvertPhotoURLToImageField = 'http://cp317.ff.gg/api/recipe/photourl_to_imagefield.json/';
 
@@ -292,6 +457,10 @@ var CHEFSHUB = {
         });
     },
 
+    /*
+     *  Updates user database with recipe user has liked and keeps track
+     *  of the total recipes the user has liked.
+     */
     likeRecipe: function(recipeId) {
         var ajaxLikeRecipeRoute = 'http://cp317.ff.gg/api/recipe/like_recipe.json/';
 
@@ -303,12 +472,57 @@ var CHEFSHUB = {
             },
             success: function(response) {
                 if (response['success']) {
-                    alert("Recipe liked success!");
+                    var CHUserData = response['data']['CH_user_data'];
+                    JSONLikedRecipes = JSON.parse(CHUserData['json_liked_recipes']);
+                    totalLikedRecipes = JSONLikedRecipes.length;
+                    noty({
+                        text: 'Recipe has been successfully liked! <br>You have a total of ' + totalLikedRecipes + ' liked recipies.',
+                        type: 'success',
+                        timeout: true,
+                        animation: {
+                            open: 'animated bounceInLeft', // Animate.css class names
+                            close: 'animated bounceOutLeft', // Animate.css class names
+                            easing: 'swing', // unavailable - no need
+                            speed: 500 // unavailable - no need
+                        }
+                    });
+                } else {
+                    noty({
+                        text: '<span style="color: black;">Error: Please login to like recipies.</span>',
+                        type: 'error',
+                        timeout: true,
+                        animation: {
+                            open: 'animated bounceInLeft', // Animate.css class names
+                            close: 'animated bounceOutLeft', // Animate.css class names
+                            easing: 'swing', // unavailable - no need
+                            speed: 500 // unavailable - no need
+                        }
+                    });
                 }
             },
         });
     },
 
+    /*
+     *  Updates page so it knows which recipes user has liked when it loads
+     *
+     */
+    checkLikedRecipes: function(data) {
+        $(function() {
+            var CHUserData = data['data']['CH_user_data'];
+            JSONLikedRecipes = JSON.parse(CHUserData['json_liked_recipes']);
+            for (i = 0; i < JSONLikedRecipes.length; i++) {
+                $('button.like-button').remove();
+            }
+        });
+    },
+
+    /*
+     *  Pull recipes from the database based on the time of their creation
+     *  and add them to recipe-list to be displayed on the main page. When user
+     *  selects a recipe, recipe info is placed in recipe-data and the recipe page
+     *  is displayed.
+     */
     indexPageFetchDataByCreateTime: function() {
         $(document).on('pageinit', '#home', function() {
             var url = 'http://cp317.ff.gg/api/recipe/get_recent.json/';
@@ -372,7 +586,7 @@ var CHEFSHUB = {
             recipeParseJSON: function(result) {
                 recipeInfo.result = result['data'];
                 $.each(result['data'], function(i, row) {
-                    $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc">Rating: ' + row.rating + '/5</p><p class=""ui-li-desc">Published: ' + jQuery.timeago(row.meta_date_created) + '</p><p class="ui-li-desc">Author: ' + row.owner + '</p></a> <p class="like-button-padding"><button class="like-button" data-id="' + row.id + '">Like Recipe</button></p></li>');
+                    $('#recipe-list').append('<li><a href="" data-id="' + row.id + '"><img src="http://m.cdn.cp317.ff.gg/' + row.photo + '" class="listview-image-centered"/><h3>' + row.recipe_name + '</h3><p class="ui-li-desc">Rating: ' + row.rating + '/5</p><p class="ui-li-desc">Published: ' + jQuery.timeago(row.meta_date_created) + '</p><p class="ui-li-desc">Author: ' + row.owner + '</p></a> <p class="like-button-padding"><button class="like-button" data-id="' + row.id + '">Like Recipe</button></p></li>');
                 });
                 $('#recipe-list').listview('refresh');
             }
